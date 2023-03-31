@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/SSCC-space/BMO_PRINTER/main/sscc.jpg?token=GHSAT0AAAAAACAXVBC3LWTAKS6NC346OHAAZBEKV3Q" width="200" alt="BMO_PRINTER" />
+  <img src="https://raw.githubusercontent.com/SSCC-space/BMO_PRINTER/main/sscc.jpg?token=GHSAT0AAAAAACAVR4MDLBTDAWDW2Z6DCQYIZBHC5NQ" width="200" alt="BMO_PRINTER" />
 </p>
 
 <p align="center">2023 SSCC PR Booth, OneCut by BMO_PRINTER &nbsp
