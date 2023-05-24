@@ -1,0 +1,33 @@
+from escpos.printer import Usb
+from PIL import Image, ImageEnhance
+import time
+from copy import deepcopy
+
+p = Usb(0x1fc9, 0x2016, in_ep=0x81, out_ep=0x01)
+
+def test(p, img):
+    p.image(img)
+    p.cut()
+
+# p = Usb(0x1fc9, 0x2016, in_ep=0x81, out_ep=0x01)
+                
+p.set(font="a", height=2, align="center")
+
+last = ""
+with open(".last", "r") as f:
+    last = f.readline().strip()
+
+img = Image.open(last)
+
+brightness = ImageEnhance.Brightness(img)
+
+
+PASS = False
+if not PASS:
+    try:
+        image = brightness.enhance(10)    
+        test(p, image)
+        PASS = True
+    except:
+        ...
+

@@ -1,215 +1,214 @@
-<<<<<<< HEAD
-# https://naemo-naemo.tistory.com/68
-import threading
-import time
-import tkinter
+import pygame
 import cv2
-import PIL.Image, PIL.ImageTk
-
-class App:
-    global shot_timer
-    def __init__(self, window, window_title, video_source=0):
-        # Tkinter 기본 설정
-        self.photo = None
-        self.window = window
-        self.window.title(window_title)  # 타이틀 설정
-        self.window.attributes('-fullscreen', True)  # 전체 화면 설정
-        self.video_source = video_source  # 웹캠 = 0
-        self.scale = 2.5  # 이미지 배율
-
-        self.vid = MyVideoCapture(self.video_source, self.scale)  # 웹캠 가져오기
-
-        # 웹캠 화면 그리는 캔버스
-        self.canvas = tkinter.Canvas(window, width=self.vid.width, height=self.vid.height)
-        self.canvas.pack()
-        # 플래쉬 타이밍 변수
-        self.shot_cnt = 13
-
-
-        # 영상 FPS 설정
-        self.fps = self.vid.webcam.get(cv2.CAP_PROP_FPS)
-        self.delay = round(1000.0 / self.fps)
-        self.update()
-
-        # 문제의 쓰레드...
-        self.window.mainloop()
-
-    def update(self):  # 웹캠 화면 업데이트
-        global shot_timer
-        ret, frame = self.vid.get_frame()
-        if ret:
-
-            if shot_timer == 0:
-                print("0 감지\n" * 100)
-
-                shot_timer=-1
-
-            #     ret, frame = self.vid.get_frame()
-            #     if ret:
-                array = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    
-                img = PIL.Image.fromarray(array)
-                # img.show()      
-            #         # img 변수에 저장되어 있는데 활용방법을...
-                
-                img = img.resize((500,375))
-
-                p.set(font="a", height=2, align="center")
-                p.text("SoongSil\n")
-                p.set(font="b", height=2, align="center")
-                p.text("Computing Club\n\n")
-                p.image(img, fragment_height=3)
-                p.image("sscc.jpg", fragment_height=3)
-                p.cut()
-                p.text("\n"*10)
-                p.cut()
-            #         return
-
-            # elif shot_timer > 0:
-            if shot_timer > 0:
-                print("감지됨", shot_timer)
-                
-
-                # array = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                array = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-                if shot_timer == 1:
-                    self.shot_cnt -= 1
-                    if 1 < self.shot_cnt < 5:
-                        array.fill(255)
-
-                img = PIL.Image.fromarray(array)
-                img = img.resize((int(img.width * self.scale), int(img.height * self.scale)))
-
-
-                self.photo = PIL.ImageTk.PhotoImage(image=img)
-                self.canvas.create_image(0, 0, image=self.photo, anchor=tkinter.NW)
-            else:
-                self.photo = tkinter.PhotoImage(file="img/bmo.png")
-                self.canvas.create_image(0, 0, image=self.photo, anchor=tkinter.NW)
-        self.window.after(self.delay, self.update)
-
-
-
-class MyVideoCapture:
-    def __init__(self, video_source=0, scale=1.0):
-        self.webcam = cv2.VideoCapture(video_source)  # 웹캠에서 영상을 가져오게 설정
-        self.scale = scale  # 이미지 배율
-        if not self.webcam.isOpened():  # 웹캠이 꺼져있으면 강제 종료 ( error )
-            raise ValueError("Unable to open video source", video_source)
-        self.width = self.webcam.get(cv2.CAP_PROP_FRAME_WIDTH) * self.scale
-        self.height = self.webcam.get(cv2.CAP_PROP_FRAME_HEIGHT) * self.scale
-
-    def get_frame(self):
-        if self.webcam.isOpened():
-            ret, frame = self.webcam.read()
-            if ret:
-                frame = cv2.flip(frame, 1)
-                return (ret, frame)
-            else:
-                return (ret, None)
-        else:
-            return (False, None)
-
-    def __del__(self):
-        if self.webcam.isOpened():
-            self.webcam.release()
-
-from serial import Serial
-
-ser = Serial("/dev/ttyUSB0", 9600)
-
-def isPressButton():
-    global shot_timer, reset_shot_timer
-    tmp_bin = 1
-    # cnt = 0
-    while True:
-        if ser.readable():
-            res = ser.readline()
-            # print(res.decode()[:len(res)-1])
-            if "1" in res.decode()[:len(res)-1] and shot_timer < 0:
-                shot_timer = 5
-                print("굳")
-        print("MAIN THREAD", shot_timer)
-        # if GPIO.input(button_pin) == GPIO.HIGH and shot_timer == 0:
-        if shot_timer == -1 or shot_timer == 0:
-            continue
-        # print(shot_timer)
-        tmp_bin += 1
-        if tmp_bin > 10:
-            shot_timer -= 1
-            tmp_bin = 1
-        time.sleep(0.1)
-        
-        # print(shot_timer, tmp_bin)
-        # if shot_timer == 0:
-        #     tmp_bin += 1
-        #     if tmp_bin == 10 * 10:
-        #         print(tmp_bin)
-        #         shot_timer = reset_shot_timer
-        #         cnt = 0
-        #         tmp_bin = 0
-
-        # if shot_timer == 0:
-        #     continue
-
-        # cnt += 1
-        # if cnt == 10:
-        #     shot_timer -= 1
-        #     cnt = 1
-        # time.sleep(0.1)
-
-
-# import RPi.GPIO as GPIO
 import time
+
+import hashlib
+import requests
 from escpos.printer import Usb
-import cv2
-import numpy as np
-from PIL import Image
+import qrcode
 
-time.sleep(10)
-print("GOING")
+import numpy as np
+from PIL import Image, ImageEnhance
+
+from util import imageCombine, qrGenerate, saturate_contrast2
+from qr import QR
+# import Qr
+
+HOST_URL = 'http://146.56.106.142/'
+
+
+pygame.init()
+SCREEN_WIDTH = 1300
+SCREEN_HEIGHT = 1000
+# surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
+# surface = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
+# surface = pygame.display.set_mode((480*2, 320*2))
+surface = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+
+class ImgObject:
+    def __init__(self, path, size):
+        self.__img = pygame.image.load(path)
+        self.__size = size
+        self.__x, self.__y = self.__img.get_size()
+
+    def get_image(self):
+        return pygame.transform.scale(self.__img, (self.__x * self.__size, self.__y * self.__size))
+
+
+BMO_TIMER_INIT = 15 * 10
+TAKE_TIMER_INIT = 10 * 10
+
+class BMO_generator:
+    def __init__(self):
+        self.timer = BMO_TIMER_INIT
+        self.__emotion = {
+            "open": ImgObject("./img/bmo_animation/emotion_0.png", 1.25),
+            "close_1": ImgObject("./img/bmo_animation/emotion_1.png", 1.25),
+            "close_2": ImgObject("./img/bmo_animation/emotion_2.png", 1.25),
+            "close": ImgObject("./img/bmo_animation/emotion_3.png", 1.25),
+        }
+
+    def next(self):
+        self.timer -= 1
+        if self.timer <= 0: self.timer = BMO_TIMER_INIT
+        if self.timer == 4: return self.__emotion["close_1"].get_image()
+        elif self.timer == 3: return self.__emotion["close_2"].get_image()
+        elif self.timer == 2: return self.__emotion["close"].get_image()
+        elif self.timer == 1: return self.__emotion["close_1"].get_image()
+        return self.__emotion["open"].get_image()
+
+
+
+class Cam_Object:
+    def __init__(self, frame):
+        self.__frame = frame
+        self.__size = 1
+
+    def setFrame(self, frame):
+        self.__frame = frame
+
+    def getImage(self):
+        image = pygame.image.frombuffer(self.__frame.tobytes(), self.__frame.shape[1::-1], "BGR")
+        dx, dy = map(lambda x: int(self.__size * x), image.get_size())
+        image = pygame.transform.scale(image, (dx, dy))
+        image = pygame.transform.flip(image, True, False)
+        return image
+
+    def setSize(self, size: float):
+        self.__size = size
+
+####################
+#       Init       #
+####################
+
+
+# qr code init
+qr = QR(HOST_URL)
+
+# camera init
+Camera = Cam_Object(None)
+Camera.setSize(2.1)
+webcam = cv2.VideoCapture(0)
+timer = 0
+
+
+
+
+
+
+img_saved = []
+
+
+# time timer init
+font1 = pygame.font.SysFont(None, 500)
+
+# BMO animation setting
+BMO = BMO_generator()
+
 p = Usb(0x1fc9, 0x2016, in_ep=0x81, out_ep=0x01)
 
-#src = cv2.imread("person.jpg", cv2.IMREAD_COLOR)
-#dst = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+
+
+running = True
+
+while running:
+
+    status, frame = webcam.read()
+    Camera.setFrame(frame)
+
+    # Key pressed
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE: # SPACE : 사진 찍기
+                timer = 5 * 10
+            elif event.key == pygame.K_ESCAPE: # ESC : BMO 닫기
+                running = False
+                break
+
+    # 다음 screen까지 딜레이
+    pygame.time.delay(10)
+    surface.blit(BMO.next(), (0, 0))
+
+
+    # 타이머 0 이상일 시 ( 타이머 돌고 있을 경우 )
+    if timer > 0:
+        timer -= 1
+
+        surface.blit(Camera.getImage(), (0, 0))
+
+        if timer == 0: # 사진 찍혔을 때
+            if len(img_saved) <= 3:
+                surface.fill((255, 255, 255))
+                pygame.display.flip()
+		
+                main_frame = imageCombine(f'./img/frames/mario/mario_0{len(img_saved) + 1}.png', frame, len(img_saved) + 1)
+                img_saved.append(main_frame)
+
+                pygame.time.delay(50)
+
+                timer = 5 * 10
+
+                if len(img_saved) == 4:
+                    timer = 1
+
+            else: # img_saved
+
+                # hashing
+                hash_object = hashlib.sha256(f"{time.time_ns()}".encode())
+                filename = hash_object.hexdigest()[:20]
+                
+                # directory name define
+                FILE_DIRECTORY = './img/capture/' + filename + '.png'
+
+                with open(".last", "w") as f:
+                    f.write(FILE_DIRECTORY)
+
+                # # IMG SAVE
+                # main_frame = imageCombine(f'./img/frames/mario/mario_0{i}.png', frame, i)
+                # img_saved.append(main_frame)
+                # img_saved.append(cv2.imread('./img/sscc.jpg'))
+
+                main_frame = cv2.vconcat(img_saved)
+
+
+                cv2.imwrite(FILE_DIRECTORY, main_frame)
+                print(FILE_DIRECTORY)
+
+                # # IMG UPLOAD
+                # with open(FILE_DIRECTORY, 'rb') as f:
+                #    res = requests.post(HOST_URL+"uploadfile/", files = {'file': f})
+                #    if res.status_code == 200:
+                #        print(res.status_code, "Image Upload Success")
+                #    else:
+                #        print(res.status_code, "Error Occured")
+
+
+                # print
+                p.set(font="a", height=2, align="center")
+
+                for img_t in img_saved:
+                    color_coverted = cv2.cvtColor(img_t, cv2.COLOR_BGR2RGB)
+                    # i = Image.fromarray(color_coverted)
+                    # gd = ImageEnhance.Brightness(pil_image)
+                    # i = gd.enhance(0.5)
+                    p.image(Image.fromarray(color_coverted), fragment_height=3)
+
+                img_saved = []
+
+                # QR
+                footer = qr.get_with_logo(HOST_URL+"images/"+filename)
+                p.image(footer, fragment_height=3)
+
+                # finish
+                p.cut()
+
+
+        else:
+            img1 = font1.render(f'{timer // 10}', True, (255, 255, 255))
+            surface.blit(img1, (SCREEN_WIDTH // 2 - 125, SCREEN_HEIGHT // 2 - 125))
+
+    pygame.display.flip()
 
 
 
-# button_pin = 15
-# GPIO.setwarnings(False)
-# GPIO.setmode(GPIO.BCM)
-# GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
-# while True:
-#     if GPIO.input(button_pin)==GPIO.HIGH:
-#         print("button pushed")
-#         time.sleep(0.1)
-
-reset_shot_timer = 5
-
-shot_timer = -1
-
-thread = threading.Thread(target=isPressButton, args=())
-thread.daemon = True
-thread.start()
-
-gui = None
-gui = App(tkinter.Tk(), "BMO SCREEN")
-=======
-from utils import getImage, getAA_01
-
-def main():
-    # RESIZE_RATE * 100 = PERSENT
-    RESIZE_RATE = 0.2  # 원본의 20% (축소)
-
-    img, HEI, WID = getImage('./img/lena.png', RESIZE_RATE)
-
-    for h in range(HEI):
-        for w in range(WID):
-            print(getAA_01(img[h][w]), end="")
-        print()
-
-if __name__ == '__main__':
-    main()
->>>>>>> 0ba43dc12f06184d5078c144a0e7484663649dd1
+pygame.quit()
