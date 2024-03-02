@@ -7,7 +7,7 @@ from escpos.printer import Usb
 
 def imageCombine(frame_path, image, index):
     # 공백 프레임 가져오기
-    main_frame = cv2.imread('./img/frames/bin.png')
+    main_frame = cv2.imread('./image/frames/bin.png')
 
     # 프레임 이미지 생성
     frame = cv2.imread(frame_path, cv2.IMREAD_UNCHANGED)
@@ -37,21 +37,21 @@ def imageCombine(frame_path, image, index):
 
 
 def qrGenerate(url, id):
-    qrimg = cv2.imread('./img/sscc.jpg')
+    qrimg = cv2.imread('./image/frames/logo/sscc.jpg')
     qr = qrcode.QRCode(version=1, box_size=3, border=5)
 
     qr.add_data(url+"images/"+id)
     qr.make(fit=True)
 
     qr_temp = qr.make_image(fill_color = "black", back_color="white")
-    qr_temp.save('./img/qr.jpg')
-    qr_img = cv2.imread('./img/qr.jpg')
+    qr_temp.save('./image/capture/temp/qr.jpg')
+    qr_img = cv2.imread('./image/capture/temp/qr.jpg')
 
     qrimg[0:128, 384:512] = qr_img[0:128, 0:128]
 
 
     # print(qr_img)
-    cv2.imwrite("img/temp.jpg", qrimg)
+    cv2.imwrite("image/capture/temp.jpg", qrimg)
     return
 
 def saturate_contrast2(p, num):
@@ -68,7 +68,7 @@ def serial_print(target):
         p.set(font="a", height=2, align="center")
         p.image(target, fragment_height=3)
     except:
-        ...
+        print("PRINT ERROR OCCURED")
 
 def serial_cut():
     p = Usb(0x1fc9, 0x2016, in_ep=0x81, out_ep=0x01)
